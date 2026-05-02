@@ -32,28 +32,29 @@ p {
 }
 
 .prefix {
-  color: #697386;
+  color: #4f566b;
   font-weight: 500;
   user-select: none;
+  margin-right: 4px;
 }
 
 input {
   border: none;
   outline: none;
   font-size: 16px;
-  padding-left: 4px;
   flex: 1;
   color: #1a1f36;
+  background: transparent;
 }
 
 .status-message {
   min-height: 24px;
-  margin-top: 8px;
+  margin-top: 12px;
   font-size: 14px;
 }
 
-.success { color: #00875a; }
-.error { color: #de350b; }
+.success { color: #00875a; font-weight: 500; }
+.error { color: #de350b; font-weight: 500; }
 .checking { color: #697386; }
 
 input.error { color: #de350b; }
@@ -64,11 +65,16 @@ input.error { color: #de350b; }
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
+  transition: background-color 0.2s;
+}
+
+.primary-button:hover:not(:disabled) {
+  background-color: #4354b3;
 }
 
 .primary-button:disabled {
@@ -76,8 +82,28 @@ input.error { color: #de350b; }
   cursor: not-allowed;
 }
 
+.interviewer-notes {
+  margin-top: 3rem;
+  padding: 1.5rem;
+  background: #f7fafc;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+}
+
+.interviewer-notes h3 {
+  margin-top: 0;
+  color: #1a1f36;
+}
+
+.interviewer-notes ul {
+  padding-left: 1.2rem;
+  color: #4f566b;
+}
+
 .interviewer-notes code {
-  background: #eee;
-  padding: 2px 4px;
-  border-radius: 3px;
+  background: #e3e8ee;
+  color: #1a1f36;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
 }
