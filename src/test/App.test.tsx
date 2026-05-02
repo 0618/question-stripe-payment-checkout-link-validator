@@ -36,7 +36,7 @@ describe('Checkout Link Validator - Task Verification', () => {
   });
 
   describe('Task 2: Debouncing (Medium)', () => {
-    it('does not trigger API result early (debounces)', async () => {
+    it('does not trigger API result early, and eventually shows result', async () => {
       render(<App />);
       const input = screen.getByPlaceholderText('your-slug');
       
@@ -47,6 +47,11 @@ describe('Checkout Link Validator - Task Verification', () => {
 
       // Status should still be checking or idle, not a final result yet
       expect(screen.queryByText(/available/i)).not.toBeInTheDocument();
+
+      // Now wait for it to actually finish
+      await waitFor(() => {
+        expect(screen.getByText(/available/i)).toBeInTheDocument();
+      }, { timeout: 4000 });
     });
   });
 
