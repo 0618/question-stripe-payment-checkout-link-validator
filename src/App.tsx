@@ -1,122 +1,114 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useEffect, useRef } from 'react';
+import './App.css';
+
+/**
+ * MOCK API
+ * Simulates a Stripe backend check for slug availability.
+ */
+const checkSlugAvailability = async (slug: string, signal: AbortSignal): Promise<'available' | 'taken' | 'invalid'> => {
+  // Simulate network delay (500ms - 1500ms)
+  const delay = 500 + Math.random() * 1000;
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(resolve, delay);
+    signal.addEventListener('abort', () => {
+      clearTimeout(timeout);
+      reject(new Error('Aborted'));
+    });
+  });
+
+  if (!/^[a-z0-9-]+$/.test(slug)) return 'invalid';
+  if (slug === 'stripe' || slug === 'pay') return 'taken';
+  return 'available';
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [slug, setSlug] = useState('');
+  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
+  
+  // useRef to keep track of the latest debounced value
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const validateSlug = async (value: string) => {
+    if (!value) {
+      setStatus('idle');
+      return;
+    }
+
+    setStatus('checking');
+
+    // Abort previous request to handle race conditions (latest request wins)
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const result = await checkSlugAvailability(value, abortControllerRef.current.signal);
+      setStatus(result);
+    } catch (err: any) {
+      if (err.name === 'Aborted') {
+        console.log(`Request for "${value}" was aborted.`);
+      } else {
+        setStatus('invalid');
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Debouncing implementation
+    if (timerRef.current) clearTimeout(timerRef.current);
+    
+    if (slug) {
+      timerRef.current = setTimeout(() => {
+        validateSlug(slug);
+      }, 500);
+    } else {
+      setStatus('idle');
+    }
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [slug]);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="container">
+      <h1>Stripe Checkout Link</h1>
+      <p>Customise your checkout link slug.</p>
+      
+      <div className="input-group">
+        <span className="prefix">stripe.com/pay/</span>
+        <input 
+          type="text" 
+          value={slug}
+          onChange={(e) => setSlug(e.target.value.toLowerCase())}
+          placeholder="your-slug"
+          className={status === 'invalid' || status === 'taken' ? 'error' : ''}
+        />
+      </div>
 
-      <div className="ticks"></div>
+      <div className="status-message">
+        {status === 'checking' && <span className="checking">Checking availability...</span>}
+        {status === 'available' && <span className="success">✓ This link is available</span>}
+        {status === 'taken' && <span className="error">✗ This link is already taken</span>}
+        {status === 'invalid' && <span className="error">✗ Slugs can only contain lowercase letters, numbers, and hyphens</span>}
+      </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <button disabled={status !== 'available'} className="primary-button">
+        Create Link
+      </button>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <div className="interviewer-notes" style={{ marginTop: '3rem', padding: '1rem', background: '#f9f9f9', border: '1px solid #ddd' }}>
+        <h3>Interviewer Hints:</h3>
+        <ul>
+          <li><strong>Debouncing:</strong> Look for <code>setTimeout</code> or a custom hook to avoid rapid API calls.</li>
+          <li><strong>Race Conditions:</strong> Essential for Senior/Stripe style. Use <code>AbortController</code> or a ref counter to ignore stale results.</li>
+          <li><strong>Loading State:</strong> Ensure UI feedback during the "checking" phase.</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
