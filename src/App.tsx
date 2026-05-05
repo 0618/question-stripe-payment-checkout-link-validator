@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './App.css';
+import { debounce } from './utils/debounce';
 
 /**
  * MOCK API
@@ -25,8 +26,6 @@ function App() {
   const [slug, setSlug] = useState('');
   const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
   
-  // useRef to keep track of the latest debounced value
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const validateSlug = async (value: string) => {
@@ -55,22 +54,16 @@ function App() {
     }
   };
 
+  // Memoize the debounced function so it's not recreated on every render
+  const debouncedValidate = useMemo(() => debounce(validateSlug, 500), []);
+
   useEffect(() => {
-    // Debouncing implementation
-    if (timerRef.current) clearTimeout(timerRef.current);
-    
     if (slug) {
-      timerRef.current = setTimeout(() => {
-        validateSlug(slug);
-      }, 500);
+      debouncedValidate(slug);
     } else {
       setStatus('idle');
     }
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [slug]);
+  }, [slug, debouncedValidate]);
 
   return (
     <div className="container">
